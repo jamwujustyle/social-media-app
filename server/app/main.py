@@ -10,7 +10,7 @@ from app.social.models import Post, Comment, Like  # Register social models
 
 from app.api.v1 import api_router
 from app.logging_config import logger
-from consts.docs import docs_desc
+from app.consts.docs import docs_desc
 
 
 async def _init_db_with_retry(retries: int = 10, delay: float = 3.0) -> None:

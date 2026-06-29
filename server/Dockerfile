@@ -14,7 +14,7 @@ RUN apk add --no-cache gcc musl-dev postgresql-dev build-base libffi-dev
 # Copy requirements and build wheels
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+    && pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # ──────────────────────────────────────────────
 # Stage 2: Runtime — Minimal production image
