@@ -1,0 +1,13 @@
+docs_desc: str = """
+        Modular monolith backend service for user lifecycle management.\n\n"
+        "## Authentication\n"
+        "JWT-based authentication with short-lived access tokens and long-lived refresh tokens. "
+        "Passwords are hashed with **bcrypt**.\n\n"
+        "## User Management\n"
+        "User profile management including registration, verification, and profile updates.\n\n"
+        "## Verification\n"
+        "Email verification flow with 6-digit codes. Unverified accounts are automatically "
+        "purged after 48 hours via a Celery Beat scheduled task.\n\n"
+        "## Infrastructure\n"
+        "PostgreSQL · Redis · Celery · Docker Compose
+        """
