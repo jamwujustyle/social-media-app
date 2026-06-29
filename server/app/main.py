@@ -2,11 +2,12 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
 from app.core.config import settings
-from app.core.database import init_db, SessionLocal
-from app.core.security import get_password_hash
+from app.core.database import init_db
+
 from app.user.models import User
+from app.social.models import Post, Comment, Like  # Register social models
+
 from app.api.v1 import api_router
 from app.logging_config import logger
 from consts.docs import docs_desc

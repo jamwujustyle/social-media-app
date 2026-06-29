@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from celery import shared_task
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import SessionLocal
 from app.user.models import User
@@ -27,10 +27,12 @@ async def async_cleanup_unverified_users(db: Optional[AsyncSession] = None) -> i
 
 
 async def _execute_cleanup(db: AsyncSession, cutoff: datetime) -> int:
-    # Select unverified users with expired verification codes to log them
     stmt = select(User).where(
         User.is_verified == False,
-        User.verification_code_expires_at <= cutoff,
+        or_(
+            User.created_at <= cutoff,
+            User.verification_code_expires_at <= cutoff,
+        ),
     )
     result = await db.execute(stmt)
     users = result.scalars().all()
@@ -47,7 +49,10 @@ async def _execute_cleanup(db: AsyncSession, cutoff: datetime) -> int:
             delete(User)
             .where(
                 User.is_verified == False,
-                User.verification_code_expires_at <= cutoff,
+                or_(
+                    User.created_at <= cutoff,
+                    User.verification_code_expires_at <= cutoff,
+                ),
             )
             .execution_options(synchronize_session=False)
         )

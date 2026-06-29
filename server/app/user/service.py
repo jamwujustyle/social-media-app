@@ -26,6 +26,11 @@ class UserService:
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
+    async def get_user_by_username(self, username: str) -> Optional[User]:
+        """Retrieve a user by their username."""
+        result = await self.db.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
+
     async def update_user(self, db_user: User, user_in: UserUpdate) -> User:
         """Partially update user details, hashing the password if it is provided."""
         update_data = user_in.model_dump(exclude_unset=True)

@@ -85,10 +85,14 @@ class AuthService:
 
     async def authenticate_user(self, login_in: LoginRequest) -> Token:
         """
-        Authenticate a user using their email and password.
+        Authenticate a user using their email/username and password.
         Returns access and refresh tokens upon success.
         """
-        user = await self.user_service.get_user_by_email(login_in.email)
+        if "@" in login_in.email:
+            user = await self.user_service.get_user_by_email(login_in.email)
+        else:
+            user = await self.user_service.get_user_by_username(login_in.email)
+
         if not user or not verify_password(login_in.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

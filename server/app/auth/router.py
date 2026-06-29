@@ -1,12 +1,22 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query, HTTPException
+from sqlalchemy import select
+from app.user.models import User
 from app.user.schemas import UserCreate, UserRead
 from app.auth.schemas import LoginRequest, RefreshRequest, Token, VerifyRequest
 from app.auth.service import AuthService
 from app.auth.dependencies import get_auth_service
+from typing import Optional
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+@router.post(
+    "/signup",
+    response_model=UserRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user (alias)",
+    description="Registers a new user (alias for /register)",
+)
 @router.post(
     "/register",
     response_model=UserRead,
@@ -50,6 +60,13 @@ async def refresh(
 
 
 @router.post(
+    "/verify-email",
+    response_model=UserRead,
+    status_code=status.HTTP_200_OK,
+    summary="Verify user account (alias)",
+    description="Verifies the user account (alias for /verify)",
+)
+@router.post(
     "/verify",
     response_model=UserRead,
     status_code=status.HTTP_200_OK,
@@ -61,3 +78,31 @@ async def verify(
     service: AuthService = Depends(get_auth_service),
 ):
     return await service.verify_user_code(verify_in)
+
+
+@router.get(
+    "/verify-email",
+    response_model=UserRead,
+    status_code=status.HTTP_200_OK,
+    summary="Verify user email via GET request",
+    description="Verifies the user account using token/code via URL parameter.",
+)
+async def verify_email_get(
+    token: str = Query(..., description="The 6-digit verification code or token"),
+    email: Optional[str] = Query(None, description="The user email (optional if token is unique)"),
+    service: AuthService = Depends(get_auth_service),
+):
+    if not email:
+        # Try to find the user by verification code
+        user_result = await service.db.execute(
+            select(User).where(User.verification_code == token, User.is_verified == False)
+        )
+        user = user_result.scalars().first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid verification code or user already verified.",
+            )
+        email = user.email
+
+    return await service.verify_user_code(VerifyRequest(email=email, code=token))

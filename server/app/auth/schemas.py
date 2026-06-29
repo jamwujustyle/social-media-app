@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, AliasChoices, EmailStr
 
 
 class Token(BaseModel):
@@ -15,7 +15,7 @@ class TokenPayload(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., validation_alias=AliasChoices("email", "username", "username_or_email"))
     password: str
 
 
