@@ -15,7 +15,7 @@ async def test_signup_success(client: AsyncClient):
         "full_name": "John Doe",
         "password": "securepassword123",
     }
-    response = await client.post("/auth/signup", json=payload)
+    response = await client.post("/auth/register", json=payload)
     assert response.status_code == 201
 
     data = response.json()
@@ -36,7 +36,7 @@ async def test_signup_duplicate_email(client: AsyncClient):
         "password": "securepassword123",
     }
     # First signup
-    res1 = await client.post("/auth/signup", json=payload)
+    res1 = await client.post("/auth/register", json=payload)
     assert res1.status_code == 201
 
     # Second signup with same email
@@ -46,7 +46,7 @@ async def test_signup_duplicate_email(client: AsyncClient):
         "full_name": "Other User",
         "password": "securepassword123",
     }
-    res2 = await client.post("/auth/signup", json=payload_dup_email)
+    res2 = await client.post("/auth/register", json=payload_dup_email)
     assert res2.status_code == 400
     assert "already exists" in res2.json()["detail"]
 
@@ -61,7 +61,7 @@ async def test_verification_flow(client: AsyncClient):
         "full_name": "Verify User",
         "password": "securepassword123",
     }
-    signup_res = await client.post("/auth/signup", json=payload)
+    signup_res = await client.post("/auth/register", json=payload)
     assert signup_res.status_code == 201
 
     # 2. Retrieve the verification code from DB
@@ -78,7 +78,7 @@ async def test_verification_flow(client: AsyncClient):
         "email": "verify@example.com",
         "code": code,
     }
-    verify_res = await client.post("/auth/verify", json=verify_payload)
+    verify_res = await client.post("/auth/verify-email", json=verify_payload)
     assert verify_res.status_code == 200
     assert verify_res.json()["is_verified"] is True
 
@@ -93,7 +93,7 @@ async def test_login_and_refresh(client: AsyncClient):
         "full_name": "Auth User",
         "password": "securepassword123",
     }
-    await client.post("/auth/signup", json=payload)
+    await client.post("/auth/register", json=payload)
 
     async with TestingSessionLocal() as db:
         result = await db.execute(select(User).where(User.email == "auth@example.com"))
@@ -201,7 +201,7 @@ async def test_login_with_username(client: AsyncClient):
         "full_name": "User User",
         "password": "securepassword123",
     }
-    await client.post("/auth/signup", json=payload)
+    await client.post("/auth/register", json=payload)
 
     async with TestingSessionLocal() as db:
         result = await db.execute(select(User).where(User.email == "user_user@example.com"))

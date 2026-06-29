@@ -5,17 +5,38 @@ REST API backend for a mini social network. Users, posts, comments, likes, JWT a
 ## Quick Start
 
 ```bash
-just start        # builds images, starts all services
+# 1. Generate .env with a secure JWT secret
+./scripts/init_env.sh
+
+# 2. Build and start all services
+docker compose up --build
+
 # API:  http://localhost:8000
 # Docs: http://localhost:8000/docs
 ```
 
-That's it. On first run, `just setup` auto-generates `.env` from the template with a cryptographically secure JWT secret (`openssl rand -hex 32`). No manual configuration needed.
+On first run, `init_env.sh` copies `.env.example` → `.env` and injects a cryptographically secure JWT secret via `openssl rand -hex 32`. No manual configuration needed.
 
 ```bash
+# Run the test suite inside Docker
+docker compose run --rm -v ./server/tests:/app/tests app \
+  pytest -o asyncio_mode=auto -o asyncio_default_fixture_loop_scope=function /app/tests
+
+# Tear down containers and volumes
+docker compose down -v
+```
+
+### Using `just` (recommended)
+
+If you have [`just`](https://github.com/casey/just) installed, these commands wrap the above:
+
+```bash
+just start        # init_env.sh + docker compose up --build
 just test         # runs the test suite inside Docker
-just stop         # tears down containers and volumes
+just stop         # docker compose down -v
 just logs         # tail all service logs
+just shell        # sh into the app container
+just db-shell     # psql into the database
 ```
 
 ---
@@ -32,28 +53,35 @@ Each domain (`auth/`, `user/`, `social/`) follows this pattern:
 
 ```
 server/app/
+├── api/
+│   ├── debug/              # debug-only routes (disabled in production)
+│   └── v1/                 # versioned API router aggregation
 ├── auth/
-│   ├── router.py          # endpoint definitions, request parsing
-│   ├── service.py         # registration, login, verification logic
-│   ├── dependencies.py    # get_current_user (JWT extraction)
-│   └── schemas.py         # Pydantic request/response models
+│   ├── router.py           # /auth/register, /auth/login, /auth/verify-email, /auth/refresh
+│   ├── service.py          # registration, login, verification logic
+│   ├── dependencies.py     # get_current_user (JWT extraction)
+│   └── schemas.py          # request/response models
 ├── user/
-│   ├── router.py          # /me endpoint
-│   ├── service.py         # profile lookup, update
-│   ├── models.py          # User ORM
+│   ├── router.py           # /me, /users/me
+│   ├── service.py          # profile lookup, update
+│   ├── models.py           # User ORM model
 │   └── schemas.py
 ├── social/
-│   ├── router.py          # posts, comments, likes, feed
-│   ├── service.py         # ownership checks, like constraints
-│   ├── models.py          # Post, Comment, Like ORM
+│   ├── router.py           # posts, comments, likes, feed
+│   ├── service.py          # ownership checks, like constraints
+│   ├── models.py           # Post, Comment, Like ORM models
 │   └── schemas.py
 ├── core/
-│   ├── config.py          # pydantic-settings, all env vars
-│   ├── database.py        # async engine, session factory
-│   ├── security.py        # JWT creation/decode, bcrypt
+│   ├── config.py           # pydantic-settings, all env vars
+│   ├── database.py         # async engine, session factory
+│   ├── security.py         # JWT creation/decode, bcrypt
 │   └── exception_handlers.py
-├── tasks.py               # Celery task: cleanup unverified users
-└── worker.py              # Celery app + beat schedule
+├── consts/
+│   └── docs.py             # OpenAPI description text
+├── main.py                 # FastAPI app factory, lifespan, retry logic
+├── tasks.py                # Celery task: cleanup unverified users
+├── worker.py               # Celery app + beat schedule
+└── logging_config.py
 ```
 
 **Why this and not a monolith service file?** Each layer has one job. Routers don't know about SQL. Services don't know about HTTP status codes (they raise `HTTPException` but never construct `Response` objects). Models don't contain business rules. This means I can test business logic by calling service methods directly, without spinning up an HTTP client.

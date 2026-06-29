@@ -11,20 +11,13 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post(
-    "/signup",
-    response_model=UserRead,
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a new user (alias)",
-    description="Registers a new user (alias for /register)",
-)
-@router.post(
     "/register",
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
     description="Registers a new user with an email and password. Upon successful registration, the user receives an 'unverified' status and a verification code is printed to the console.",
 )
-async def signup(
+async def register(
     user_in: UserCreate,
     service: AuthService = Depends(get_auth_service),
 ):
@@ -61,13 +54,6 @@ async def refresh(
 
 @router.post(
     "/verify-email",
-    response_model=UserRead,
-    status_code=status.HTTP_200_OK,
-    summary="Verify user account (alias)",
-    description="Verifies the user account (alias for /verify)",
-)
-@router.post(
-    "/verify",
     response_model=UserRead,
     status_code=status.HTTP_200_OK,
     summary="Verify user account",
